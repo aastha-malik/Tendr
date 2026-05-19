@@ -104,13 +104,15 @@ export default function FocusTimer({
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Stop the timer when it reaches 0 — kept separate so the updater stays pure
+  useEffect(() => {
+    if (timeLeft === 0 && isRunning) setIsRunning(false);
+  }, [timeLeft, isRunning]);
+
   useEffect(() => {
     if (isRunning && timeLeft > 0) {
       intervalRef.current = setInterval(() => {
-        setTimeLeft(prev => {
-          if (prev <= 1) { setIsRunning(false); return 0; }
-          return prev - 1;
-        });
+        setTimeLeft(prev => (prev <= 1 ? 0 : prev - 1));
       }, 1000);
     } else {
       if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }

@@ -146,8 +146,8 @@ export default function Today() {
   const pet = alivePet ?? pets[0];
   const petIsDead = !alivePet && !!pet;
   const completedToday = tasks.filter(t => {
-    if (!t.completed) return false;
-    const d = new Date(t.created_at);
+    if (!t.completed || !t.completed_at) return false;
+    const d = new Date(t.completed_at);
     const now = new Date();
     return d.getDate() === now.getDate() && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
   }).length;
