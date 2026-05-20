@@ -78,18 +78,21 @@ export default function FocusTimer({
     return () => window.removeEventListener('keydown', onKey);
   }, [isFullscreen]);
 
-  // Keep auth ref in sync so unmount cleanup can read the current value
+  // Keep auth + saveSession in refs so the save effect never re-fires due to their identity
+  const saveSessionRef = useRef(saveSession);
   useEffect(() => { isAuthRef.current = isAuthenticated; }, [isAuthenticated]);
+  useEffect(() => { saveSessionRef.current = saveSession; }, [saveSession]);
 
-  // Save on pause / timer completion
+  // Save on pause / timer completion — depends ONLY on isRunning so nothing else
+  // can accidentally reset startTimeRef while the timer is ticking
   useEffect(() => {
     if (!isRunning && startTimeRef.current !== null) {
       const elapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
       startTimeRef.current = null;
-      if (elapsed >= MIN_SAVE_SECS && isAuthenticated) saveSession(elapsed);
+      if (elapsed >= MIN_SAVE_SECS && isAuthRef.current) saveSessionRef.current(elapsed);
     }
     if (isRunning) startTimeRef.current = Date.now();
-  }, [isRunning, isAuthenticated, saveSession]);
+  }, [isRunning]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Save on unmount — fires when navigating away while the timer is still running
   useEffect(() => {
