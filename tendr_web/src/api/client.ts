@@ -14,12 +14,13 @@ import type {
 
 // Get token from auth context (will be passed as parameter)
 type GetTokenFn = () => string | null;
+type LogoutFn = () => void;
 
 let getToken: GetTokenFn = () => null;
+let onUnauthorized: LogoutFn = () => {};
 
-export const setTokenGetter = (fn: GetTokenFn) => {
-  getToken = fn;
-};
+export const setTokenGetter = (fn: GetTokenFn) => { getToken = fn; };
+export const setLogoutHandler = (fn: LogoutFn) => { onUnauthorized = fn; };
 
 const getAuthHeaders = (): HeadersInit => {
   const token = getToken();
@@ -49,9 +50,10 @@ const handleResponse = async <T>(response: Response): Promise<T> => {
       throw new Error(`Not found (${response.url})`);
     }
 
-    // Handle 401 Unauthorized
+    // Handle 401 Unauthorized — clear auth state so ProtectedRoute redirects to /
     if (response.status === 401) {
-      throw new Error('Unauthorized. Please log in again.');
+      onUnauthorized();
+      throw new Error('Session expired. Please log in again.');
     }
 
     let errorMessage = `HTTP error! status: ${response.status}`;

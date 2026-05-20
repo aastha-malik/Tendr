@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useRef, useCallback, useEffect } f
 import type { ReactNode } from 'react';
 import { authAPI } from '../api/client';
 import type { TokenResponse, LoginRequest, RegisterRequest } from '../api/types';
-import { setTokenGetter } from '../api/client';
+import { setTokenGetter, setLogoutHandler } from '../api/client';
 import { isTokenExpired } from '../utils/jwt';
 
 interface AuthContextType {
@@ -25,18 +25,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [email, setEmail] = useState<string | null>(() => localStorage.getItem('email'));
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('token'));
 
-  // Set up token getter for API client
+  // Set up token getter for API client (logout handler wired after logout is defined)
   setTokenGetter(() => tokenRef.current);
-
-
-
-  // Effect to validate token on mount
-  useEffect(() => {
-    const storedToken = localStorage.getItem('token');
-    if (storedToken && isTokenExpired(storedToken)) {
-      logout();
-    }
-  }, []);
 
   const setAuthData = useCallback((newToken: string, newUsername: string, newEmail: string) => {
     tokenRef.current = newToken;
@@ -76,12 +66,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setToken(null);
     setUsername(null);
     setEmail(null);
-
-    // Clear localStorage
     localStorage.removeItem('token');
     localStorage.removeItem('username');
     localStorage.removeItem('email');
   }, []);
+
+  // Wire logout into the API client so any 401 response triggers it
+  setLogoutHandler(logout);
+
+  // Proactively check token expiry every 30 s
+  useEffect(() => {
+    const check = () => {
+      if (tokenRef.current && isTokenExpired(tokenRef.current)) logout();
+    };
+    check();
+    const id = setInterval(check, 30_000);
+    return () => clearInterval(id);
+  }, [logout]);
 
   // Check if token is expired
   const isAuthenticated = token !== null && !isTokenExpired(token);
