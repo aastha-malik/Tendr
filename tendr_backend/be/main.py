@@ -448,7 +448,7 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
 
     # Returning user — issue normal auth token
     data = { "sub": user.username }
-    jwt_token = auth_crud.create_access_token(data, expires_delta=timedelta(minutes=30))
+    jwt_token = auth_crud.create_access_token(data, expires_delta=timedelta(days=7))
 
     encoded_username = urllib.parse.quote(user.username)
     encoded_email = urllib.parse.quote(user.email)
@@ -495,7 +495,7 @@ def complete_google_registration(body: GoogleCompleteRegistrationRequest, db: Se
     existing = db.query(User).filter(User.email == user_email).first()
     if existing:
         data = {"sub": existing.username}
-        jwt_token = auth_crud.create_access_token(data, expires_delta=timedelta(minutes=30))
+        jwt_token = auth_crud.create_access_token(data, expires_delta=timedelta(days=7))
         return {"token": jwt_token, "username": existing.username, "email": existing.email}
 
     new_user = User(
@@ -512,7 +512,7 @@ def complete_google_registration(body: GoogleCompleteRegistrationRequest, db: Se
     db.refresh(new_user)
 
     data = {"sub": new_user.username}
-    jwt_token = auth_crud.create_access_token(data, expires_delta=timedelta(minutes=30))
+    jwt_token = auth_crud.create_access_token(data, expires_delta=timedelta(days=7))
     return {"token": jwt_token, "username": new_user.username, "email": new_user.email}
 
 
@@ -534,7 +534,7 @@ def _authenticate_form(form_data: OAuth2PasswordRequestForm, db: Session):
         raise HTTPException(status_code=400, detail="This account uses Google login. Use 'Forgot Password' to set a password.")
 
     data = {"sub": user.username}
-    token = auth_crud.create_access_token(data, expires_delta=timedelta(minutes=20))
+    token = auth_crud.create_access_token(data, expires_delta=timedelta(days=7))
     return {"access_token": token, "token_type": "bearer", "username": user.username, "email": user.email}
 
 
