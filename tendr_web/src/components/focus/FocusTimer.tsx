@@ -107,21 +107,22 @@ export default function FocusTimer({
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Stop the timer when it reaches 0 — kept separate so the updater stays pure
+  // Stop the timer when it reaches 0
   useEffect(() => {
     if (timeLeft === 0 && isRunning) setIsRunning(false);
   }, [timeLeft, isRunning]);
 
+  // Single persistent interval — only created/destroyed when isRunning changes,
+  // never on every tick, so the 1000ms period is never reset mid-countdown
   useEffect(() => {
-    if (isRunning && timeLeft > 0) {
-      intervalRef.current = setInterval(() => {
-        setTimeLeft(prev => (prev <= 1 ? 0 : prev - 1));
-      }, 1000);
-    } else {
+    if (!isRunning) return;
+    intervalRef.current = setInterval(() => {
+      setTimeLeft(prev => (prev <= 1 ? 0 : prev - 1));
+    }, 1000);
+    return () => {
       if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
-    }
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [isRunning, timeLeft]);
+    };
+  }, [isRunning]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleStart = () => {
     setIsEditing(false);
